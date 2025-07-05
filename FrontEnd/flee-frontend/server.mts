@@ -13,21 +13,30 @@ app.prepare().then(() => {
     const httpServer = createServer(handle);
     const io = new Server(httpServer); //This is a whole room, can have multiple sockets.
     io.on("connection", (socket) => {
-        console.log(`User connected: ${socket.id}`);
 
-        socket.on("join-room", ({room, username}) => {
+        socket.on("join-room", async ({room, username}) => {
           socket.join(room);
-          console.log(`User ${username} joined room ${room}`)
-          socket.to(room).emit("user_joined", `${username} joined room ${room}`);
+
+          socket.data.username = username;
+          const socketsInRoom = (await io.in(room).fetchSockets()).length;
+          socket.emit("user_joined", {members: socketsInRoom, message: `You joined the room`})
+          socket.to(room).emit("user_joined", {members: socketsInRoom, message: `${username} has joined the room`});
         })
 
         socket.on("message", ({room, message, sender}) => {
-          console.log('Messahe from ', sender, ': ',message, ' in room ', room)
           socket.to(room).emit("message", {sender, message})
         })
 
-        socket.on('disconnect', () => {
-          console.log('Client disconnected:', socket.id);
+        socket.on('disconnecting', async () => {
+          console.log('Client disconnecting:', socket.id);
+          for(const room of socket.rooms){
+            if(room !== socket.id){
+              const sockets = await io.in(room).fetchSockets();
+              const newCount = sockets.length -1
+
+              socket.to(room).emit("user_joined", {members: newCount, message: `${socket.data.username} has left the room`})
+            }
+          }
         });
   
     });

@@ -1,21 +1,29 @@
 "use client"
 import React, { useState } from "react";
 import {socket} from '@/lib/SocketClient'
-export default function HomeForm(){
+import {useRouter} from 'next/navigation';
+
+interface FormSubmitProps { 
+    username: string;
+    room: string;
+}
+
+export default function HomeForm({
+    onSubmitForm,
+}: {
+    onSubmitForm: (username: string, room: string) => void;
+}){
 
 
     const [name, setName] = useState('');
     const [roomID, setRoomID] = useState('');
+    const router = useRouter(); 
 
+    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        // console.log('Name: ', name);
-        // console.log('Room ID: ', roomID);
-        // socket.emit("join_room", {roomID, name})
-
+        onSubmitForm(name, roomID)
     }
-
 
     return(
         <div className="p-2">
