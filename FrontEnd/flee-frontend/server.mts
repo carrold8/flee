@@ -9,6 +9,21 @@ import { Server } from "socket.io";
  const app = next({dev, hostname, port});
 const handle = app.getRequestHandler();
 
+const colours = [
+  '#e6194B',
+  '#ffe119',
+  '#bf3f45',
+  '#4363d8',
+  '#469990',
+  '#800000',
+  '#42d4f4',
+  '#911eb4',
+  '#000075',
+  '#000000',
+  '#808000',
+  '#f58231'
+]
+
 app.prepare().then(() => {
     const httpServer = createServer(handle);
     const io = new Server(httpServer); //This is a whole room, can have multiple sockets.
@@ -18,13 +33,17 @@ app.prepare().then(() => {
           socket.join(room);
 
           socket.data.username = username;
+          
           const socketsInRoom = (await io.in(room).fetchSockets()).length;
+          socket.data.colour = colours[socketsInRoom -1]
+          console.log(colours[socketsInRoom-1])
           socket.emit("user_joined", {members: socketsInRoom, message: `You joined the room`})
           socket.to(room).emit("user_joined", {members: socketsInRoom, message: `${username} has joined the room`});
         })
 
         socket.on("message", ({room, message, sender}) => {
-          socket.to(room).emit("message", {sender, message})
+          socket.emit("message", {sender, message, colour: socket.data.colour})
+          socket.to(room).emit("message", {sender, message, colour: socket.data.colour})
         })
 
         socket.on('disconnecting', async () => {

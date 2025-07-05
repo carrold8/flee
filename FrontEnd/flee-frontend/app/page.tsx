@@ -11,17 +11,18 @@ export default function ChatRoom() {
 
     const [joined, setJoined] = useState(false);
     const [members, setMembers] = useState(0);
-    const [messages, setMessages] = useState<{sender: string; message: string} []>([]);
+    const [colour, setColour] = useState('');
+    const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
 
     const [roomID, setRoomID] = useState('');
     const [userName, setUserName] = useState(''); 
 
     const handleSendMessage = (message: string) => {
         const data = {
-            room: roomID, message, sender: userName
+            room: roomID, message, sender: userName, colour: colour
         }
         console.log('Sending');
-        setMessages((prev => [...prev, {sender: userName, message}]))
+        // setMessages((prev => [...prev, {sender: userName, message, colour}]))
         socket.emit("message", data);
 
     }
@@ -61,8 +62,10 @@ export default function ChatRoom() {
         })
 
         socket.on("user_joined", (data) => {
+          console.log(data);
             setMembers(data.members)
-            setMessages((prev => [...prev, {sender: "system", message: data.message}]))
+            // setColour(data.colour);
+            setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
 
         
@@ -76,8 +79,6 @@ export default function ChatRoom() {
 
     return(
         <div className="flex mt-24 justify-center w-full">
-
-
             {!joined ? 
             <HomeForm onSubmitForm={handleSubmit}/>
             :
@@ -89,7 +90,7 @@ export default function ChatRoom() {
                             <div className="text-black">No messages yet...</div>
                             :
                         messages.map((message, index) => (
-                            <ChatMessage key={index} sender={message.sender} message={message.message} isOwnMsg={message.sender === userName}/>
+                            <ChatMessage key={index} sender={message.sender} message={message.message} colour={message.colour} isOwnMsg={message.sender === userName}/>
                         ))}
                     </div>
                     <div>

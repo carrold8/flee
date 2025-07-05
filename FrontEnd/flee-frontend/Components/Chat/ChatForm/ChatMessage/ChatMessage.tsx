@@ -3,10 +3,11 @@ import React from "react";
 interface ChatMessageProps { 
     sender: string;
     message: string;
+    colour: string;
     isOwnMsg: boolean;
 }
 
-export default function ChatMessage({sender, message, isOwnMsg}: ChatMessageProps){
+export default function ChatMessage({sender, message, colour, isOwnMsg}: ChatMessageProps){
 
     const isSystemMsg = sender === 'system';
 
@@ -19,12 +20,12 @@ export default function ChatMessage({sender, message, isOwnMsg}: ChatMessageProp
           : "justify-start"
         } mb-3`}
         >
-            <div className={`max-w-xs px-4 py-2 rounded-lg ${
+            <div style={{backgroundColor: colour}} className={`max-w-xs px-4 py-2 rounded-lg ${
                 isSystemMsg 
                 ? "bg-gray-800 text-white text-center text-xs " 
                 : isOwnMsg 
-                ?  "bg-blue-500 text-white" 
-                : "bg-gray-100 text-black"
+                ?  "text-white" 
+                : "text-white"
                 }`}>
                 {!isSystemMsg && <p className="text-sm font-bold">{sender}</p>}
                 <p>{message}</p>
