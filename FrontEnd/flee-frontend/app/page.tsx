@@ -20,6 +20,7 @@ export default function ChatRoom() {
         const data = {
             room: roomID, message, sender: userName
         }
+        console.log('Sending');
         setMessages((prev => [...prev, {sender: userName, message}]))
         socket.emit("message", data);
 
@@ -36,9 +37,9 @@ export default function ChatRoom() {
     //     }
 
     const handleSubmit = (username: string, room: string) => {
-        console.log('Submitted: ', username, ' Room: ', roomID)
+        console.log('Submitted: ', username, ' Room: ', room)
         setUserName(username);
-        setRoomID(roomID);
+        setRoomID(room);
         if(room && username){
             socket.emit("join-room", {room: room, username: username})
             setJoined(true);
