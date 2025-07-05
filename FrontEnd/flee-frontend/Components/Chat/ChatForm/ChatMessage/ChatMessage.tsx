@@ -12,10 +12,20 @@ export default function ChatMessage({sender, message, isOwnMsg}: ChatMessageProp
 
     return(
         <div className={`flex ${
-          isSystemMsg ? "justify-end" : isOwnMsg ?  "justify-end" : "justify-start"
-        } items-center`}
+          isSystemMsg 
+          ? "justify-center" 
+          : isOwnMsg 
+          ?  "justify-end" 
+          : "justify-start"
+        } mb-3`}
         >
-            <div className={`max-w-xs px-4 py-2 rounded-lg ${isSystemMsg ? "bg-gray-800 text-white text-center text-xs" : isOwnMsg ?  "bg-blue-500" : "bg-white-100 text-black"}`}>
+            <div className={`max-w-xs px-4 py-2 rounded-lg ${
+                isSystemMsg 
+                ? "bg-gray-800 text-white text-center text-xs " 
+                : isOwnMsg 
+                ?  "bg-blue-500 text-white" 
+                : "bg-gray-100 text-black"
+                }`}>
                 {!isSystemMsg && <p className="text-sm font-bold">{sender}</p>}
                 <p>{message}</p>
             </div>
