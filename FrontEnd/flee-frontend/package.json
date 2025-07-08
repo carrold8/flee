@@ -2,6 +2,7 @@
   "name": "flee-frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "cross-env NODE_OPTIONS=--loader=ts-node/esm node --no-warnings server.mts",
     "build": "next build",
@@ -9,6 +10,9 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "dotenv": "^17.1.0",
+    "express": "^5.1.0",
+    "mongodb": "^6.17.0",
     "next": "15.3.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

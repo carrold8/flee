@@ -50,6 +50,11 @@ export default function ChatRoom() {
     
 
     useEffect(() => {
+
+        socket.on('chat-history', (data) => {
+            console.log(data);
+            setMessages(data);
+        })
         socket.on("message", (data) => {
             console.log(data);
             setMessages((prev) => [...prev, data]);
