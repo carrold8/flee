@@ -40,9 +40,10 @@ app.prepare().then(() => {
         .toArray();
       socket.emit("chat-history", history);
 
-      socket.emit("user_joined", {
+      socket.emit("you_joined", {
         members: socketsInRoom,
         message: `You joined the room`,
+        colour: socket.data.colour 
       });
       socket.to(room).emit("user_joined", {
         members: socketsInRoom,
@@ -63,9 +64,14 @@ app.prepare().then(() => {
       await messagesCollection.insertOne(chatMessage);
 
       // ✅ Emit message
-      socket.emit("message", chatMessage);
+      // socket.emit("message", chatMessage);
       socket.to(room).emit("message", chatMessage);
     });
+
+    socket.on("select-square", async ({room, point}) => {
+      console.log('Point selected: ', point);
+      socket.to(room).emit("square-selected", point);
+    })
 
     socket.on("disconnecting", async () => {
       for (const room of socket.rooms) {
