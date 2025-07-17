@@ -5,6 +5,8 @@ import ChatMessage from "@/Components/Chat/ChatForm/ChatMessage/ChatMessage";
 import {socket} from '@/lib/SocketClient';
 import HomeForm from "@/Components/HomeForm/HomeForm";
 import GameGrid from "@/Components/GameGrid/GameGrid";
+import './HomePage.css';
+import UserDisplay from "@/Components/UserDisplay/UserDisplay";
 
 export default function ChatRoom() {
 
@@ -14,6 +16,7 @@ export default function ChatRoom() {
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
+    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: Number, lives: Number, room: string, ready: boolean} []>([]);
     // const [points, setPoints] = useState<{x: Number; y: Number;} []>([]);
 
     const [roomID, setRoomID] = useState('');
@@ -42,13 +45,17 @@ export default function ChatRoom() {
     //     }
 
     const handleSubmit = (username: string, room: string) => {
-        console.log('Submitted: ', username, ' Room: ', room)
+
         setUserName(username);
         setRoomID(room);
         if(room && username){
-            socket.emit("join-room", {room: room, username: username})
+            socket.emit("join-room", {room: room, username: username});            
             setJoined(true);
         }
+    }
+
+    const handleMimic = () => {
+        socket.emit("mimic-zero", {room: roomID})
     }
 
     
@@ -69,6 +76,9 @@ export default function ChatRoom() {
                 })
             }
         })
+        socket.on("hit-point", (data) => {
+            console.log(data)
+        })
 
         // socket.on("square-selected", (data) => {
         //     console.log('Square: ', data);
@@ -79,6 +89,9 @@ export default function ChatRoom() {
           console.log(data);
             setMembers(data.members);
             setColour(data.colour);
+            console.log('Users: ', data.users);
+            setUsers(data.users);
+            // setUsers((prev => [...prev, data.users]))
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
 
@@ -86,6 +99,7 @@ export default function ChatRoom() {
           console.log(data);
             setMembers(data.members);
             // setColour(data.colour);
+            setUsers(data.users)
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
 
@@ -99,27 +113,46 @@ export default function ChatRoom() {
 
 
     return(
-        <div className="flex mt-24 justify-center w-full">
+        <div>
             {!joined ? 
             <HomeForm onSubmitForm={handleSubmit}/>
             :
-                <div className="w-full max-w-3xl mx-auto">
+                <div>
                     <div>Welcome to Room {roomID}</div>
-                    <div>
-                        <GameGrid roomID={roomID} colour={colour}/>
-                    </div>
                     <div>Members: {members}</div>
-                    <div className="h-[500px] overflow-y-auto p-4 mb-4 bg-gray-200 border-2 rounded-lg">
-                        {messages.length === 0 ? 
-                            <div className="text-black">No messages yet...</div>
-                            :
-                        messages.map((message, index) => (
-                            <ChatMessage key={index} sender={message.sender} message={message.message} colour={message.colour} isOwnMsg={message.sender === userName}/>
-                        ))}
+                    <div className="game-container">
+                        <div className="item">
+                            <div>Users</div>
+                            <div>
+                                {users.map((user, index) => {
+                                    return(
+                                        <UserDisplay user={user} key={index} />
+                                    )   
+                                })}
+                            </div>
+                        </div>
+                        <div className="item">
+                            <GameGrid roomID={roomID} username={userName} colour={colour}/>
+                        </div>
+                        <div className="item">
+
+                             <div className="h-[500px] overflow-y-auto p-4 mb-4 bg-gray-200 border-2 rounded-lg">
+                                {messages.length === 0 ? 
+                                    <div className="text-black">No messages yet...</div>
+                                    :
+                                messages.map((message, index) => (
+                                    <ChatMessage key={index} sender={message.sender} message={message.message} colour={message.colour} isOwnMsg={message.sender === userName}/>
+                                ))}
+                            </div>
+                            <div>
+                                <ChatForm onSendMessage={handleSendMessage}/>
+                            </div>
+
+                        </div>
                     </div>
-                    <div>
-                        <ChatForm onSendMessage={handleSendMessage}/>
-                    </div>
+                    
+                    
+                   
                 </div>
             } 
         </div>

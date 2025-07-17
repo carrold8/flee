@@ -24,30 +24,57 @@ app.prepare().then(() => {
   io.on("connection", async (socket) => {
     const client = await clientPromise;
     const db = client.db("chatdb");
+    const usersCollection = db.collection("users");
     const messagesCollection = db.collection("messages");
+    const pointsCollection = db.collection("points")
 
     socket.on("join-room", async ({ room, username }) => {
       socket.join(room);
       socket.data.username = username;
-
       const socketsInRoom = (await io.in(room).fetchSockets()).length;
+
+      const newUser = {
+        username: username,
+        colour: colours[socketsInRoom - 1],
+        x: 0,
+        y: 0,
+        lives: 3,
+        room: room,
+        ready: false
+      }
+
+      await usersCollection.insertOne(newUser);
+
       socket.data.colour = colours[socketsInRoom - 1];
 
-      // ✅ Send chat history
-      const history = await messagesCollection
+      // Send chat history
+      const chatHistory = await messagesCollection
         .find({ room })
         .sort({ timestamp: 1 })
         .toArray();
-      socket.emit("chat-history", history);
+      socket.emit("chat-history", chatHistory);
+
+      const pointsHistory = await pointsCollection
+        .find({ room })
+        .sort({ timestamp: 1 })
+        .toArray();
+      socket.emit("points-history", pointsHistory);
+
+      const users = await usersCollection
+        .find({ room })
+        .sort({ timestamp: 1 })
+        .toArray();
 
       socket.emit("you_joined", {
         members: socketsInRoom,
         message: `You joined the room`,
-        colour: socket.data.colour 
+        colour: socket.data.colour,
+        users: users
       });
       socket.to(room).emit("user_joined", {
         members: socketsInRoom,
         message: `${username} has joined the room`,
+        users: users
       });
     });
 
@@ -70,7 +97,33 @@ app.prepare().then(() => {
 
     socket.on("select-square", async ({room, point}) => {
       console.log('Point selected: ', point);
-      socket.to(room).emit("square-selected", point);
+      await pointsCollection.deleteOne({room: room, "point.username": point.username})
+      const selectedPoint = {
+        room,
+        point
+      }
+      await pointsCollection.insertOne(selectedPoint);
+      socket.to(room).emit("square-selected", selectedPoint);
+    })
+
+    socket.on("mimic-zero", async ({room}) => {
+      const xHit = Math.floor(Math.random() * 10) + 1;
+      const yHit = Math.floor(Math.random() * 10) + 1;
+
+      let hitUser = 'Nobody'
+      const hitPoint = {x: xHit, yHit};
+      const pointsHistory = await pointsCollection
+        .find({ room })
+        .sort({ timestamp: 1 })
+        .toArray();
+        
+        pointsHistory.map((point) => {
+          if(point.point.x === xHit && point.point.y === yHit){
+            hitUser = point.point.username
+          }
+        })
+      socket.emit("hit-point", {user: hitUser, point: hitPoint})
+      socket.to(room).emit("hit-point", {user: hitUser, point: hitPoint})
     })
 
     socket.on("disconnecting", async () => {
@@ -79,10 +132,25 @@ app.prepare().then(() => {
           const sockets = await io.in(room).fetchSockets();
           const newCount = sockets.length - 1;
 
+          await usersCollection.deleteOne({room: room})
+
+          const users = await usersCollection
+        .find({ room })
+        .sort({ timestamp: 1 })
+        .toArray();
+
           socket.to(room).emit("user_joined", {
             members: newCount,
             message: `${socket.data.username} has left the room`,
+            users: users
           });
+
+
+          if(newCount === 0){
+            db.collection("messages").deleteMany({room: room})
+            db.collection("points").deleteMany({room: room})
+            db.collection("users").deleteMany({room: room})
+          }
         }
       }
     });
@@ -92,45 +160,3 @@ app.prepare().then(() => {
     console.log(`Server Running on http://${hostname}:${port}`);
   });
 });
-
-// import { createServer } from 'http';
-// import { Server } from 'socket.io';
-// import next from 'next';
-
-// const dev = process.env.NODE_ENV !== 'production';
-// const app = next({ dev });
-// const handle = app.getRequestHandler();
-
-// const server = createServer();
-
-// const io = new Server(server, {
-//   cors: {
-//     origin: "*", // Adjust this in production
-//   },
-// });
-
-// io.on('connection', (socket) => {
-//   console.log('🔌 New client connected:', socket.id);
-  
-//   socket.on("join-room", ({room, username}) => {
-//     socket.join(room);
-//     console.log(`User connected: ${socket}`)
-//     socket.to(room.emit("user_joined", `${username} joined room ${room}`));
-//   })
-
-//   socket.on('message', (data) => {
-//     console.log('📨 Message received:', data);
-//     socket.broadcast.emit('message', data); // broadcast to others
-//   });
-
-//   socket.on('disconnect', () => {
-//     console.log('👋 Client disconnected:', socket.id);
-//   });
-// });
-
-// app.prepare().then(() => {
-//   server.on('request', (req, res) => handle(req, res));
-//   server.listen(3000, () => {
-//     console.log('✅ Server ready on http://localhost:3000');
-//   });
-// });
