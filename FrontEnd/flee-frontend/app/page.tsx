@@ -13,6 +13,7 @@ export default function ChatRoom() {
     const msgTone = typeof Audio !== 'undefined' ? new Audio('/sounds/message-124468.mp3') : null;
 
     const [joined, setJoined] = useState(false);
+    const [invalid, setInvalid] = useState(false);
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
@@ -50,7 +51,7 @@ export default function ChatRoom() {
         setRoomID(room);
         if(room && username){
             socket.emit("join-room", {room: room, username: username});            
-            setJoined(true);
+            // setJoined(true);
         }
     }
 
@@ -58,6 +59,15 @@ export default function ChatRoom() {
         socket.emit("mimic-zero", {room: roomID})
     }
 
+    const handleSelectSquare = (X: Number, Y: Number) => {
+            const newPoint = {
+                x: X,
+                y: Y,
+                colour: colour,
+                username: userName
+            }
+            socket.emit("select-square", {room: roomID, point: newPoint});
+        }
     
 
     useEffect(() => {
@@ -87,6 +97,7 @@ export default function ChatRoom() {
 
         socket.on("you_joined", (data) => {
           console.log(data);
+            setJoined(true);
             setMembers(data.members);
             setColour(data.colour);
             console.log('Users: ', data.users);
@@ -94,6 +105,10 @@ export default function ChatRoom() {
             // setUsers((prev => [...prev, data.users]))
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
+
+        socket.on("user-already-exists", (message) => {
+
+        })
 
         socket.on("user_joined", (data) => {
           console.log(data);
@@ -103,6 +118,15 @@ export default function ChatRoom() {
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
 
+        socket.on("user-square-selected", (data) => {
+            console.log('Square User: ', data);
+            setUsers(data);
+        })
+
+        socket.on("users-hit", (data) => {
+            console.log('Hit users: ', data);
+            setUsers(data);
+        })
         
 
         return () => {
@@ -120,6 +144,7 @@ export default function ChatRoom() {
                 <div>
                     <div>Welcome to Room {roomID}</div>
                     <div>Members: {members}</div>
+                    <button onClick={handleMimic}>Mimic</button>
                     <div className="game-container">
                         <div className="item">
                             <div>Users</div>
@@ -132,7 +157,7 @@ export default function ChatRoom() {
                             </div>
                         </div>
                         <div className="item">
-                            <GameGrid roomID={roomID} username={userName} colour={colour}/>
+                            <GameGrid users={users} handleSelectSquare={handleSelectSquare}/>
                         </div>
                         <div className="item">
 

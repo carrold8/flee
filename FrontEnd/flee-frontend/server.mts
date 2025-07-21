@@ -26,7 +26,6 @@ app.prepare().then(() => {
     const db = client.db("chatdb");
     const usersCollection = db.collection("users");
     const messagesCollection = db.collection("messages");
-    const pointsCollection = db.collection("points")
 
     socket.on("join-room", async ({ room, username }) => {
       socket.join(room);
@@ -40,42 +39,47 @@ app.prepare().then(() => {
         y: 0,
         lives: 3,
         room: room,
-        ready: false
+        ready: false,
+        active: true,
+        connected: true
       }
 
-      await usersCollection.insertOne(newUser);
+      const userExists = await usersCollection.findOne({username: username});
 
-      socket.data.colour = colours[socketsInRoom - 1];
+      if(userExists || socketsInRoom > 11){
+        socket.emit("user-already-exists", 'User exits already');
+      }
+      else{
 
-      // Send chat history
-      const chatHistory = await messagesCollection
-        .find({ room })
-        .sort({ timestamp: 1 })
-        .toArray();
-      socket.emit("chat-history", chatHistory);
+        await usersCollection.insertOne(newUser);
 
-      const pointsHistory = await pointsCollection
-        .find({ room })
-        .sort({ timestamp: 1 })
-        .toArray();
-      socket.emit("points-history", pointsHistory);
+        socket.data.colour = colours[socketsInRoom - 1];
 
-      const users = await usersCollection
-        .find({ room })
-        .sort({ timestamp: 1 })
-        .toArray();
+        // Send chat history
+        const chatHistory = await messagesCollection
+          .find({ room })
+          .sort({ timestamp: 1 })
+          .toArray();
+        socket.emit("chat-history", chatHistory);
 
-      socket.emit("you_joined", {
-        members: socketsInRoom,
-        message: `You joined the room`,
-        colour: socket.data.colour,
-        users: users
-      });
-      socket.to(room).emit("user_joined", {
-        members: socketsInRoom,
-        message: `${username} has joined the room`,
-        users: users
-      });
+
+        const users = await usersCollection
+          .find({ room })
+          .sort({ lives: -1 })
+          .toArray();
+
+        socket.emit("you_joined", {
+          members: socketsInRoom,
+          message: `You joined the room`,
+          colour: socket.data.colour,
+          users: users
+        });
+        socket.to(room).emit("user_joined", {
+          members: socketsInRoom,
+          message: `${username} has joined the room`,
+          users: users
+        });
+      }
     });
 
     socket.on("message", async ({ room, message, sender }) => {
@@ -87,43 +91,68 @@ app.prepare().then(() => {
         timestamp: new Date(),
       };
 
-      // ✅ Save to DB
       await messagesCollection.insertOne(chatMessage);
 
-      // ✅ Emit message
-      // socket.emit("message", chatMessage);
+      //Emit message
       socket.to(room).emit("message", chatMessage);
     });
 
     socket.on("select-square", async ({room, point}) => {
-      console.log('Point selected: ', point);
-      await pointsCollection.deleteOne({room: room, "point.username": point.username})
-      const selectedPoint = {
-        room,
-        point
+
+      const userPoint = await usersCollection.findOne({x: point.x, y: point.y});
+      if(!userPoint){ 
+        let newvalues = { $set: {x: point.x, y: point.y } };
+        await usersCollection.updateOne({room: room, username: point.username}, newvalues)
+        const users = await usersCollection
+          .find({ room })
+          .sort({ lives: -1 })
+          .toArray();
+        socket.to(room).emit("user-square-selected", users);
+        socket.emit("user-square-selected", users);
       }
-      await pointsCollection.insertOne(selectedPoint);
-      socket.to(room).emit("square-selected", selectedPoint);
     })
 
     socket.on("mimic-zero", async ({room}) => {
       const xHit = Math.floor(Math.random() * 10) + 1;
       const yHit = Math.floor(Math.random() * 10) + 1;
+      let hitUser = '';
 
-      let hitUser = 'Nobody'
-      const hitPoint = {x: xHit, yHit};
-      const pointsHistory = await pointsCollection
+      const users = await usersCollection
         .find({ room })
-        .sort({ timestamp: 1 })
+        .sort({ lives: -1 })
         .toArray();
-        
-        pointsHistory.map((point) => {
-          if(point.point.x === xHit && point.point.y === yHit){
-            hitUser = point.point.username
-          }
-        })
-      socket.emit("hit-point", {user: hitUser, point: hitPoint})
-      socket.to(room).emit("hit-point", {user: hitUser, point: hitPoint})
+
+      const distance = (userX: number, userY: number, x: number, y: number) => {
+        const xvals = (userX - x) * (userX - x);
+        const yvals = (userY - y) * (userY - y);
+        return Math.sqrt(xvals + yvals);
+      }
+
+      let shortestDistance: number;
+      users.map((user) => {
+        if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
+          shortestDistance = distance(user.x, user.y, xHit, yHit);
+          hitUser = user.username;
+        }
+        else if(user.lives > 0 && user.x > 0 && user.y > 0){
+          const distanceFrom = distance(user.x, user.y, xHit, yHit);
+          if(distanceFrom < shortestDistance){
+            shortestDistance = distanceFrom;
+            hitUser = user.username
+          } 
+        }
+      })
+      let newLives = { $inc: {lives: -1 } };
+      await usersCollection.updateOne({room: room, username: hitUser}, newLives);
+
+      const newUsers = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+      
+      socket.emit("users-hit", newUsers);
+      socket.to(room).emit("users-hit", newUsers);
     })
 
     socket.on("disconnecting", async () => {
@@ -132,11 +161,11 @@ app.prepare().then(() => {
           const sockets = await io.in(room).fetchSockets();
           const newCount = sockets.length - 1;
 
-          await usersCollection.deleteOne({room: room})
+          await usersCollection.deleteOne({room: room, username: socket.data.username})
 
           const users = await usersCollection
         .find({ room })
-        .sort({ timestamp: 1 })
+        .sort({ lives: -1 })
         .toArray();
 
           socket.to(room).emit("user_joined", {
@@ -145,10 +174,8 @@ app.prepare().then(() => {
             users: users
           });
 
-
           if(newCount === 0){
             db.collection("messages").deleteMany({room: room})
-            db.collection("points").deleteMany({room: room})
             db.collection("users").deleteMany({room: room})
           }
         }
