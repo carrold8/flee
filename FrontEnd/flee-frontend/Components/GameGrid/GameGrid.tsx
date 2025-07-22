@@ -19,6 +19,16 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
 
     const xVals = [1,2,3,4,5,6,7,8,9,10]
     const yVals = [1,2,3,4,5,6,7,8,9,10]
+
+    const clickGridLocation = (x: number, y: number) => {
+        if(!users.find((user) => user.x === x && user.y === y)){
+            console.log('No user with that location');
+            handleSelectSquare(x, y);
+        } else {
+            console.log('User has that square: ')
+            console.log(users.find((user) => user.x === x && user.y === y))
+        }
+    }
     return(
         <div>
             <div>Game Grid</div>
@@ -35,8 +45,9 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
                             return (       
                                 <td 
                                     key={yVal} 
-                                    style={{height: '4rem', width: '4rem', border: '2px solid red', backgroundColor: bgColour, margin: '5px'}} 
-                                    onClick={() => {if(!users.find((user) => user.x === xVal && user.y === yVal)) handleSelectSquare(xVal, yVal)}}
+                                    style={{height: '3rem', width: '3rem', border: '2px solid red', backgroundColor: bgColour, margin: '5px'}} 
+                                    // onClick={() => {if(!users.find((user) => user.x === xVal && user.y === yVal)) handleSelectSquare(xVal, yVal)}}
+                                    onClick={() => {clickGridLocation(xVal, yVal)}}
                                 ></td>
                             )
                             }
@@ -44,7 +55,7 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
                                 return(
                                 <td 
                                     key={yVal} 
-                                    style={{height: '4rem', width: '4rem', border: '2px solid red', backgroundColor: 'white', margin: '5px'}} 
+                                    style={{height: '3rem', width: '3rem', border: '2px solid red', backgroundColor: 'white', margin: '5px'}} 
                                     onClick={() => {if(!users.find((user) => user.x === xVal && user.y === yVal)) handleSelectSquare(xVal, yVal)}}
                                 ></td>
                                 )

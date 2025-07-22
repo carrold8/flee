@@ -44,7 +44,7 @@ app.prepare().then(() => {
         connected: true
       }
 
-      const userExists = await usersCollection.findOne({username: username});
+      const userExists = await usersCollection.findOne({room: room, username: username});
 
       if(userExists || socketsInRoom > 11){
         socket.emit("user-already-exists", 'User exits already');
@@ -99,7 +99,7 @@ app.prepare().then(() => {
 
     socket.on("select-square", async ({room, point}) => {
 
-      const userPoint = await usersCollection.findOne({x: point.x, y: point.y});
+      const userPoint = await usersCollection.findOne({room: room, x: point.x, y: point.y});
       if(!userPoint){ 
         let newvalues = { $set: {x: point.x, y: point.y } };
         await usersCollection.updateOne({room: room, username: point.username}, newvalues)
@@ -109,7 +109,7 @@ app.prepare().then(() => {
           .toArray();
         socket.to(room).emit("user-square-selected", users);
         socket.emit("user-square-selected", users);
-      }
+      } 
     })
 
     socket.on("mimic-zero", async ({room}) => {

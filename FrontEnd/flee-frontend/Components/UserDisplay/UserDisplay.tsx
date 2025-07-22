@@ -1,4 +1,5 @@
 import React from "react";
+import './UserDisplay.css';
 
 interface userInterface {
     username: string,
@@ -14,6 +15,14 @@ export default function UserDisplay({user} : {user: userInterface}){
 
 
     return(
-        <div style={{backgroundColor: user.colour}}>{user.username} {user.lives.toString()} <input disabled type="checkbox" checked={user.ready} /></div>
+        <div
+            className="user-container" 
+            style={{backgroundColor: user.colour}}
+        >
+            <div>{user.username}</div> 
+            <div>{user.lives.toString()}</div> 
+            <div><input disabled type="checkbox" checked={user.ready} /></div>
+        
+        </div>
     )
 }

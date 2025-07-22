@@ -60,6 +60,7 @@ export default function ChatRoom() {
     }
 
     const handleSelectSquare = (X: Number, Y: Number) => {
+        console.log('Selecting')
             const newPoint = {
                 x: X,
                 y: Y,
