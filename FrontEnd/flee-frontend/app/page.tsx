@@ -14,6 +14,7 @@ export default function ChatRoom() {
 
     const [joined, setJoined] = useState(false);
     const [invalid, setInvalid] = useState(false);
+    const [ready, setReady] = useState(false);
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
@@ -64,10 +65,15 @@ export default function ChatRoom() {
             const newPoint = {
                 x: X,
                 y: Y,
-                colour: colour,
                 username: userName
             }
             socket.emit("select-square", {room: roomID, point: newPoint});
+        }
+
+        const handleReadyUp = () => {
+            console.log('Ready up');
+            socket.emit("ready-up", {room: roomID, username: userName, ready: !ready});
+            setReady(!ready);
         }
     
 
@@ -86,6 +92,10 @@ export default function ChatRoom() {
                     console.log('Audio play issue: ', err);
                 })
             }
+        })
+
+        socket.on("ready-up", (data) => {
+            setUsers(data);
         })
         socket.on("hit-point", (data) => {
             console.log(data)
@@ -148,6 +158,7 @@ export default function ChatRoom() {
                     <button onClick={handleMimic}>Mimic</button>
                     <div className="game-container">
                         <div className="item">
+                            <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
                             <div>Users</div>
                             <div>
                                 {users.map((user, index) => {

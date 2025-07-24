@@ -21,12 +21,15 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
     const yVals = [1,2,3,4,5,6,7,8,9,10]
 
     const clickGridLocation = (x: number, y: number) => {
-        if(!users.find((user) => user.x === x && user.y === y)){
-            console.log('No user with that location');
-            handleSelectSquare(x, y);
-        } else {
-            console.log('User has that square: ')
-            console.log(users.find((user) => user.x === x && user.y === y))
+        if(users.filter((user) => user.ready).length === users.length){
+            if(!users.find((user) => user.x === x && user.y === y)){
+                handleSelectSquare(x, y);
+            } else {
+                console.log(users.find((user) => user.x === x && user.y === y))
+            }
+        }
+        else{
+            console.log('not everyone is ready')
         }
     }
     return(
@@ -56,7 +59,7 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
                                 <td 
                                     key={yVal} 
                                     style={{height: '3rem', width: '3rem', border: '2px solid red', backgroundColor: 'white', margin: '5px'}} 
-                                    onClick={() => {if(!users.find((user) => user.x === xVal && user.y === yVal)) handleSelectSquare(xVal, yVal)}}
+                                    onClick={() => {clickGridLocation(xVal, yVal)}}
                                 ></td>
                                 )
                             }

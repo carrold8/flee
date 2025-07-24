@@ -30,7 +30,8 @@ app.prepare().then(() => {
     socket.on("join-room", async ({ room, username }) => {
       socket.join(room);
       socket.data.username = username;
-      const socketsInRoom = (await io.in(room).fetchSockets()).length;
+      const sockets = (await io.in(room).fetchSockets())
+      const socketsInRoom = sockets.length;
 
       const newUser = {
         username: username,
@@ -45,8 +46,11 @@ app.prepare().then(() => {
       }
 
       const userExists = await usersCollection.findOne({room: room, username: username});
+      const userConnected = sockets.filter((socket) => socket.data.username === username).length > 0;
+      console.log('User Connected ? ', userConnected);
 
       if(userExists || socketsInRoom > 11){
+        
         socket.emit("user-already-exists", 'User exits already');
       }
       else{
@@ -96,6 +100,16 @@ app.prepare().then(() => {
       //Emit message
       socket.to(room).emit("message", chatMessage);
     });
+
+    socket.on("ready-up", async ({room, username, ready}) => {
+      await usersCollection.updateOne({room: room, username: username}, {$set: {ready: ready}})
+      const users = await usersCollection
+          .find({ room })
+          .sort({ lives: -1 })
+          .toArray();
+        socket.to(room).emit("ready-up", users);
+        socket.emit("ready-up", users);
+    })
 
     socket.on("select-square", async ({room, point}) => {
 

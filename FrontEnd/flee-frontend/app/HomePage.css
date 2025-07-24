@@ -9,3 +9,10 @@
     padding: 1.5rem;
     margin: 1rem;
 }
+
+.ready-button{
+
+}
+.ready-button.ready{
+    background-color: green;
+}
