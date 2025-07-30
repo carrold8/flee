@@ -20,6 +20,8 @@ const colours = [
 app.prepare().then(() => {
   const httpServer = createServer(handle);
   const io = new Server(httpServer);
+  const COUNTDOWN_DURATION = 10;
+  let countdownEndTime: number | null = null;
 
   io.on("connection", async (socket) => {
     const client = await clientPromise;
@@ -27,9 +29,17 @@ app.prepare().then(() => {
     const usersCollection = db.collection("users");
     const messagesCollection = db.collection("messages");
 
+    if(countdownEndTime) {
+      socket.emit('countdownStart', {endTime: countdownEndTime});
+    }
+
+    socket.on('startCountdown', () => {
+      countdownEndTime = Date.now() + COUNTDOWN_DURATION * 1000;
+      io.emit('countdownStart', {endTime: countdownEndTime});
+    })
+
     socket.on("join-room", async ({ room, username }) => {
       socket.join(room);
-      socket.data.username = username;
       const sockets = (await io.in(room).fetchSockets())
       const socketsInRoom = sockets.length;
 
@@ -56,7 +66,7 @@ app.prepare().then(() => {
       else{
 
         await usersCollection.insertOne(newUser);
-
+        socket.data.username = username;
         socket.data.colour = colours[socketsInRoom - 1];
 
         // Send chat history

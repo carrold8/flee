@@ -7,6 +7,7 @@ import HomeForm from "@/Components/HomeForm/HomeForm";
 import GameGrid from "@/Components/GameGrid/GameGrid";
 import './HomePage.css';
 import UserDisplay from "@/Components/UserDisplay/UserDisplay";
+import CountdownTimer from "@/Components/CountdownTimer/CountdownTimer";
 
 export default function ChatRoom() {
 
@@ -156,6 +157,8 @@ export default function ChatRoom() {
                     <div>Welcome to Room {roomID}</div>
                     <div>Members: {members}</div>
                     <button onClick={handleMimic}>Mimic</button>
+                    <button onClick={() => socket.emit("startCountdown")}>Count</button>
+                    <CountdownTimer />
                     <div className="game-container">
                         <div className="item">
                             <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
