@@ -36,6 +36,8 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
         <div>
             <div>Game Grid</div>
             <div>
+
+                {users.filter((user) => user.ready).length === users.length ? 
                 <table>
                     <tbody>
             {xVals.map((xVal) => {
@@ -71,6 +73,9 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
             })}
             </tbody>
             </table>
+            :
+              <h1>Waiting for everyone to ready up...</h1>  
+            }
             </div>
         </div>
     )

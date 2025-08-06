@@ -3,6 +3,7 @@ import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
 import clientPromise from "./lib/mongodb.ts"; // ✅ MongoDB import
+import { connected } from 'node:process';
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
@@ -43,9 +44,11 @@ app.prepare().then(() => {
       const sockets = (await io.in(room).fetchSockets())
       const socketsInRoom = sockets.length;
 
+      const usersInRoom = await usersCollection.countDocuments({room: room})
+      console.log('users in room: ', usersInRoom);
       const newUser = {
         username: username,
-        colour: colours[socketsInRoom - 1],
+        colour: colours[usersInRoom],
         x: 0,
         y: 0,
         lives: 3,
@@ -56,10 +59,38 @@ app.prepare().then(() => {
       }
 
       const userExists = await usersCollection.findOne({room: room, username: username});
-      const userConnected = sockets.filter((socket) => socket.data.username === username).length > 0;
-      console.log('User Connected ? ', userConnected);
+            
+      if(userExists && !userExists.connected ){
+        await usersCollection.updateOne({room: room, username: username}, {$set: {connected: true}});
+        socket.data.username = username;
+        socket.data.colour = userExists.colour;
 
-      if(userExists || socketsInRoom > 11){
+        const chatHistory = await messagesCollection
+          .find({ room })
+          .sort({ timestamp: 1 })
+          .toArray();
+        socket.emit("chat-history", chatHistory);
+
+
+        const users = await usersCollection
+          .find({ room })
+          .sort({ lives: -1 })
+          .toArray();
+
+        socket.emit("you_joined", {
+          members: usersInRoom,
+          message: `You joined the room`,
+          colour: userExists.colour,
+          users: users
+        });
+        socket.to(room).emit("user_joined", {
+          members: usersInRoom,
+          message: `${username} has joined the room`,
+          users: users
+        });
+
+      }
+      else if((userExists && userExists.connected) || usersInRoom > 11){
         
         socket.emit("user-already-exists", 'User exits already');
       }
@@ -67,7 +98,7 @@ app.prepare().then(() => {
 
         await usersCollection.insertOne(newUser);
         socket.data.username = username;
-        socket.data.colour = colours[socketsInRoom - 1];
+        socket.data.colour = colours[usersInRoom];
 
         // Send chat history
         const chatHistory = await messagesCollection
@@ -83,13 +114,13 @@ app.prepare().then(() => {
           .toArray();
 
         socket.emit("you_joined", {
-          members: socketsInRoom,
+          members: usersInRoom,
           message: `You joined the room`,
           colour: socket.data.colour,
           users: users
         });
         socket.to(room).emit("user_joined", {
-          members: socketsInRoom,
+          members: usersInRoom,
           message: `${username} has joined the room`,
           users: users
         });
@@ -185,7 +216,7 @@ app.prepare().then(() => {
           const sockets = await io.in(room).fetchSockets();
           const newCount = sockets.length - 1;
 
-          await usersCollection.deleteOne({room: room, username: socket.data.username})
+          await usersCollection.updateOne({room: room, username: socket.data.username}, {$set: {connected: false}})
 
           const users = await usersCollection
         .find({ room })
@@ -194,7 +225,7 @@ app.prepare().then(() => {
 
           socket.to(room).emit("user_joined", {
             members: newCount,
-            message: `${socket.data.username} has left the room`,
+            message: `${socket.data.username} disconnected`,
             users: users
           });
 

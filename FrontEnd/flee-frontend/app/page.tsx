@@ -19,8 +19,7 @@ export default function ChatRoom() {
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
-    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: Number, lives: Number, room: string, ready: boolean} []>([]);
-    // const [points, setPoints] = useState<{x: Number; y: Number;} []>([]);
+    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: Number, lives: Number, room: string, ready: boolean, connected: boolean} []>([]);
 
     const [roomID, setRoomID] = useState('');
     const [userName, setUserName] = useState(''); 
@@ -62,7 +61,6 @@ export default function ChatRoom() {
     }
 
     const handleSelectSquare = (X: Number, Y: Number) => {
-        console.log('Selecting')
             const newPoint = {
                 x: X,
                 y: Y,
@@ -162,17 +160,31 @@ export default function ChatRoom() {
                     <div className="game-container">
                         <div className="item">
                             <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
-                            <div>Users</div>
                             <div>
+                                <table style={{width: '100%'}}>
+                                                <thead>
+                                                    <tr>
+                                                        <th align="left">Username</th>
+                                                        <th>Colour</th>
+                                                        <th>Ready</th>
+                                                        <th>Signal</th>
+                                                        <th>Lives</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
                                 {users.map((user, index) => {
                                     return(
                                         <UserDisplay user={user} key={index} />
                                     )   
                                 })}
+                                </tbody>
+                                </table>
                             </div>
                         </div>
                         <div className="item">
+                            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                             <GameGrid users={users} handleSelectSquare={handleSelectSquare}/>
+                            </div>
                         </div>
                         <div className="item">
 
