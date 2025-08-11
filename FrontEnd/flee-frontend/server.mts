@@ -23,7 +23,7 @@ const colours = [
 
 app.prepare().then(() => {
   const httpServer = createServer(handle);
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {cors: {origin: '*'}});
   const COUNTDOWN_DURATION = 10;
   let countdownEndTime: number | null = null;
 
