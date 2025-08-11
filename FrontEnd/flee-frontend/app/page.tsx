@@ -7,7 +7,6 @@ import HomeForm from "@/Components/HomeForm/HomeForm";
 import GameGrid from "@/Components/GameGrid/GameGrid";
 import './HomePage.css';
 import UserDisplay from "@/Components/UserDisplay/UserDisplay";
-import CountdownTimer from "@/Components/CountdownTimer/CountdownTimer";
 
 export default function ChatRoom() {
 
@@ -28,23 +27,12 @@ export default function ChatRoom() {
         const data = {
             room: roomID, message, sender: userName, colour: colour
         }
-        console.log('Sending');
         setMessages((prev => [...prev, {sender: userName, message, colour}]))
         socket.emit("message", data);
 
     }
 
-    
 
-    // const handleSubmit = (e: React.FormEvent) => {
-    //         e.preventDefault();
-    
-    //         console.log('Name: ', name);
-    //         console.log('Room ID: ', roomID);
-    //         socket.emit("join_room", {roomID, name})
-    //         handleJoinRoom()
-    
-    //     }
 
     const handleSubmit = (username: string, room: string) => {
 
@@ -70,7 +58,6 @@ export default function ChatRoom() {
         }
 
         const handleReadyUp = () => {
-            console.log('Ready up');
             socket.emit("ready-up", {room: roomID, username: userName, ready: !ready});
             setReady(!ready);
         }
@@ -79,11 +66,11 @@ export default function ChatRoom() {
     useEffect(() => {
 
         socket.on('chat-history', (data) => {
-            console.log(data);
+            
             setMessages(data);
         })
         socket.on("message", (data) => {
-            console.log(data);
+            
             setMessages((prev) => [...prev, data]);
 
             if(msgTone){
@@ -96,32 +83,22 @@ export default function ChatRoom() {
         socket.on("ready-up", (data) => {
             setUsers(data);
         })
-        socket.on("hit-point", (data) => {
-            console.log(data)
-        })
-
-        // socket.on("square-selected", (data) => {
-        //     console.log('Square: ', data);
-        //     setPoints((prev) => [...prev, data]);
-        // })
-
+       
         socket.on("you_joined", (data) => {
-          console.log(data);
+            
             setJoined(true);
             setMembers(data.members);
-            setColour(data.colour);
-            console.log('Users: ', data.users);
+            setColour(data.colour)
             setUsers(data.users);
             // setUsers((prev => [...prev, data.users]))
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
 
-        socket.on("user-already-exists", (message) => {
-
+        socket.on("user-tiles", (data) => {
+            setUsers(data);
         })
 
         socket.on("user_joined", (data) => {
-          console.log(data);
             setMembers(data.members);
             // setColour(data.colour);
             setUsers(data.users)
@@ -129,12 +106,15 @@ export default function ChatRoom() {
         });
 
         socket.on("user-square-selected", (data) => {
-            console.log('Square User: ', data);
             setUsers(data);
         })
 
         socket.on("users-hit", (data) => {
-            console.log('Hit users: ', data);
+            setUsers(data);
+        })
+
+        socket.on('reset-board', (data) => {
+            console.log('reset ', data)
             setUsers(data);
         })
         
@@ -155,11 +135,10 @@ export default function ChatRoom() {
                     <div>Welcome to Room {roomID}</div>
                     <div>Members: {members}</div>
                     <button onClick={handleMimic}>Mimic</button>
-                    <button onClick={() => socket.emit("startCountdown")}>Count</button>
-                    <CountdownTimer />
+                    
                     <div className="game-container">
                         <div className="item">
-                            <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
+                            <button onClick={handleReadyUp} disabled={users.length === users.filter((user) => user.ready).length} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
                             <div>
                                 <table style={{width: '100%'}}>
                                                 <thead>

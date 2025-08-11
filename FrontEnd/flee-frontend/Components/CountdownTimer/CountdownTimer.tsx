@@ -9,39 +9,26 @@ import {socket} from '@/lib/SocketClient';
 function CountdownTimer() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
+  const [time, setTime] = useState<number | null>(null);
 
   useEffect(() => {
-    socket.on('countdownStart', ({ endTime }) => {
-      setEndTime(endTime);
+    socket.on('countdownStart',  (time) => {
+      // setTime(time);
     });
+    
+    socket.on('countdown', (time) => {
+      setTime(time)
+    })
 
-    return () => {
-      socket.off('countdownStart');
-    };
+    socket.on('countdown-end', () => {
+      setTime(null);
+    })
+
   }, []);
-
-  useEffect(() => {
-    if (!endTime) return;
-
-    const interval = setInterval(() => {
-      const now = Date.now();
-      const diff = Math.max(0, Math.floor((endTime - now) / 1000));
-      setTimeLeft(diff);
-
-      if (diff === 0) clearInterval(interval);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [endTime]);
-
-  const startCountdown = () => {
-    socket.emit('startCountdown');
-  };
 
   return (
     <div>
-      <h1>Countdown: {timeLeft !== null ? timeLeft : 'Waiting...'}</h1>
-      <button onClick={startCountdown}>Start Countdown</button>
+      <h1>{time !== null && time }</h1>
     </div>
   );
 }

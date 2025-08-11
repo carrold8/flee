@@ -9,7 +9,7 @@ interface ChatMessageProps {
 
 export default function ChatMessage({sender, message, colour, isOwnMsg}: ChatMessageProps){
 
-    const isSystemMsg = sender === 'system';
+    const isSystemMsg = sender === 'system' || sender === "game";
 
     return(
         <div className={`flex ${

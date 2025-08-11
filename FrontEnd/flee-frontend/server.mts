@@ -4,6 +4,9 @@ import next from "next";
 import { Server } from "socket.io";
 import clientPromise from "./lib/mongodb.ts"; // ✅ MongoDB import
 import { connected } from 'node:process';
+import { UserInfo } from 'node:os';
+import { resolve } from 'node:path';
+import { ObjectId } from 'mongodb';
 
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
@@ -24,20 +27,228 @@ app.prepare().then(() => {
   const COUNTDOWN_DURATION = 10;
   let countdownEndTime: number | null = null;
 
+ 
+
   io.on("connection", async (socket) => {
     const client = await clientPromise;
     const db = client.db("chatdb");
     const usersCollection = db.collection("users");
     const messagesCollection = db.collection("messages");
 
-    if(countdownEndTime) {
-      socket.emit('countdownStart', {endTime: countdownEndTime});
+    const startCountdown = async (room: string, time: number) => {
+      let countDownSeconds = time;
+      socket.to(room).emit('countdownStart');
+      socket.emit('countdownStart');
+
+      socket.to(room).emit('countdown', countDownSeconds);
+      socket.emit('countdown', countDownSeconds);
+
+      return new Promise<void>((resolve) => {
+        let interval = setInterval(() => {
+          countDownSeconds--;
+          io.to(room).emit('countdown', countDownSeconds);
+          console.log(countDownSeconds);
+
+          if(countDownSeconds <= 0){
+            clearInterval(interval);
+            io.to(room).emit('countdown-end');
+            resolve();
+          }
+        }, 1000)
+      });
     }
 
-    socket.on('startCountdown', () => {
-      countdownEndTime = Date.now() + COUNTDOWN_DURATION * 1000;
-      io.emit('countdownStart', {endTime: countdownEndTime});
-    })
+    const selectTiles = async (room: string) => {
+
+      const allTiles = [];
+      for (let x = 1; x <= 10; x++) {
+        for (let y = 1; y <= 10; y++) {
+          allTiles.push({ x, y });
+        }
+      }
+
+      const users = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+      const usersWithoutTiles = users.filter((user) => user.x === 0 && user.y === 0 && user.lives > 0); 
+      const tilesNeeded = usersWithoutTiles.length;
+      const usersSelected = users.filter((user) => (user.x > 0 && user.y > 0)); 
+
+      console.log('usersSelected')
+      console.log(usersSelected)
+      console.log(tilesNeeded);
+      console.log(usersWithoutTiles);
+
+      const isSelected = (tile: {x: number, y: number}) =>
+        usersSelected.some(selected => selected.x === tile.x && selected.y === tile.y);
+
+      const availableTiles = allTiles.filter(tile => !isSelected(tile)); 
+
+      for (let i = availableTiles.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableTiles[i], availableTiles[j]] = [availableTiles[j], availableTiles[i]];
+      }
+
+      const newTiles = availableTiles.slice(0, tilesNeeded);
+
+      console.log('newTiles: ', newTiles.length)
+      console.log(newTiles)
+
+      const userUpdates: {_id: ObjectId, x: number, y: number}[] = [];
+      usersWithoutTiles.map((user, index) => {
+        userUpdates.push({_id: user._id, x: newTiles[index].x, y: newTiles[index].y });
+      })
+
+      const bulkOps = userUpdates.map((user) => ({
+        updateOne: {
+          filter: { _id: user._id },
+          update: { $set: { x: user.x, y: user.y} },
+        },
+      }));
+
+      console.log('bulkOps');
+      console.log(bulkOps);
+
+      await usersCollection.bulkWrite(bulkOps);
+     
+      const usersWithTiles = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+        console.log(usersWithTiles);
+
+        io.to(room).emit('user-tiles', usersWithTiles);
+      
+    }
+
+    const handleHitUser = async (room:string) => {
+      const xHit = Math.floor(Math.random() * 10) + 1;
+      const yHit = Math.floor(Math.random() * 10) + 1;
+      let hitUser = '';
+
+      const users = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+      const distance = (userX: number, userY: number, x: number, y: number) => {
+        const xvals = (userX - x) * (userX - x);
+        const yvals = (userY - y) * (userY - y);
+        return Math.sqrt(xvals + yvals);
+      }
+
+      let shortestDistance: number;
+      users.map((user) => {
+        if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
+          shortestDistance = distance(user.x, user.y, xHit, yHit);
+          hitUser = user.username;
+        }
+        else if(user.lives > 0 && user.x > 0 && user.y > 0){
+          const distanceFrom = distance(user.x, user.y, xHit, yHit);
+          if(distanceFrom < shortestDistance){
+            shortestDistance = distanceFrom;
+            hitUser = user.username
+          } 
+        }
+      })
+      
+        const chatMessage = {
+        room,
+        sender: users.find((user) => user.username === hitUser)?.lives === 1 ? "game" : "system",
+        message: users.find((user) => user.username === hitUser)?.lives === 1 ? hitUser + " was eliminated." : hitUser + " lost a life.",
+        colour: 'grey',
+        timestamp: new Date(),
+      };
+
+      await messagesCollection.insertOne(chatMessage);
+
+      //Emit message
+      io.to(room).emit('hit-point', {x: xHit, y: yHit});
+      io.to(room).emit("message", chatMessage);
+      
+      let newLives = { $inc: {lives: -1 } };
+      await usersCollection.updateOne({room: room, username: hitUser}, newLives);
+
+      const newUsers = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+
+      socket.emit("users-hit", newUsers);
+      socket.to(room).emit("users-hit", newUsers);
+    }
+
+    const clearBoard = async (room: string) => {
+
+      console.log('clearing board')
+
+      await usersCollection.updateMany({room: room}, {$set: {x: 0, y: 0}});
+      const users = await usersCollection
+        .find({ room })
+        .sort({ lives: -1 })
+        .toArray();
+
+        io.to(room).emit('reset-board', users);
+        io.to(room).emit('hit-point', {x: 0, y: 0});
+
+        return users;
+
+    }
+
+    const handleEndOfRound = async (room: string) => {
+      //Give all players that have lives left a random unused grid place if selected values are x = 0 and y = 0;
+      await selectTiles(room);
+      await handleHitUser(room);
+      let countDownSeconds = 5;
+      await new Promise<void>((resolve) => {
+        let interval = setInterval(() => {
+          countDownSeconds--;
+          if(countDownSeconds <= 0){
+            clearInterval(interval);
+            resolve();
+          }
+        }, 1000)
+      });
+
+      return await clearBoard(room);
+      
+
+    }
+
+    const startGame = async (room: string) => {
+
+      let allEliminated = false;
+      
+
+      while(!allEliminated){
+
+        //Start a countdown before beginning game
+        await startCountdown(room, 5);
+
+        //Enable the frontend grid to be clickable.
+        console.log('Countdown ended')
+        io.to(room).emit('grid-clickable', true);
+
+        //Show countdown timer for choosing tiles and then disable the grid.
+        await startCountdown(room, 10);
+        io.to(room).emit('grid-clickable', false);
+        const users = await handleEndOfRound(room);
+        const usersLeft = users.filter((user) => user.lives > 0).length;
+        allEliminated = usersLeft === 1;
+      }
+      
+      
+    }
+
+    // if(countdownEndTime) {
+    //   socket.emit('countdownStart', {endTime: countdownEndTime});
+    // }
+
+    
 
     socket.on("join-room", async ({ room, username }) => {
       socket.join(room);
@@ -45,7 +256,6 @@ app.prepare().then(() => {
       const socketsInRoom = sockets.length;
 
       const usersInRoom = await usersCollection.countDocuments({room: room})
-      console.log('users in room: ', usersInRoom);
       const newUser = {
         username: username,
         colour: colours[usersInRoom],
@@ -148,9 +358,45 @@ app.prepare().then(() => {
           .find({ room })
           .sort({ lives: -1 })
           .toArray();
+
+      if(users.length === users.filter((user) => user.ready).length){
+
+        const compPlayers = [];
+
+        for(let i = users.length; i < 12; i++){
+          const newUser = {
+            username: 'Player ' + (i + 1),
+            colour: colours[i],
+            x: 0,
+            y: 0,
+            lives: 3,
+            room: room,
+            ready: true,
+            active: false,
+            connected: true
+          }
+          compPlayers.push(newUser);
+        }
+
+        await usersCollection.insertMany(compPlayers);
+        const fillUsers = await usersCollection
+          .find({ room })
+          .sort({ lives: -1 })
+          .toArray();
+        socket.to(room).emit("ready-up", fillUsers);
+        socket.emit("ready-up", fillUsers);
+
+        
+        startGame(room);
+
+      }
+      else{
         socket.to(room).emit("ready-up", users);
         socket.emit("ready-up", users);
+      }
+      
     })
+    
 
     socket.on("select-square", async ({room, point}) => {
 
@@ -164,50 +410,56 @@ app.prepare().then(() => {
           .toArray();
         socket.to(room).emit("user-square-selected", users);
         socket.emit("user-square-selected", users);
+
+        if(users.filter((user) => user.x !== 0 && user.y !== 0).length === users.filter((user) => user.active && user.connected).length){
+          console.log('All players have selected points');
+        }
       } 
     })
 
     socket.on("mimic-zero", async ({room}) => {
-      const xHit = Math.floor(Math.random() * 10) + 1;
-      const yHit = Math.floor(Math.random() * 10) + 1;
-      let hitUser = '';
+      // const xHit = Math.floor(Math.random() * 10) + 1;
+      // const yHit = Math.floor(Math.random() * 10) + 1;
+      // let hitUser = '';
 
-      const users = await usersCollection
-        .find({ room })
-        .sort({ lives: -1 })
-        .toArray();
+      // const users = await usersCollection
+      //   .find({ room })
+      //   .sort({ lives: -1 })
+      //   .toArray();
 
-      const distance = (userX: number, userY: number, x: number, y: number) => {
-        const xvals = (userX - x) * (userX - x);
-        const yvals = (userY - y) * (userY - y);
-        return Math.sqrt(xvals + yvals);
-      }
+      // const distance = (userX: number, userY: number, x: number, y: number) => {
+      //   const xvals = (userX - x) * (userX - x);
+      //   const yvals = (userY - y) * (userY - y);
+      //   return Math.sqrt(xvals + yvals);
+      // }
 
-      let shortestDistance: number;
-      users.map((user) => {
-        if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
-          shortestDistance = distance(user.x, user.y, xHit, yHit);
-          hitUser = user.username;
-        }
-        else if(user.lives > 0 && user.x > 0 && user.y > 0){
-          const distanceFrom = distance(user.x, user.y, xHit, yHit);
-          if(distanceFrom < shortestDistance){
-            shortestDistance = distanceFrom;
-            hitUser = user.username
-          } 
-        }
-      })
-      let newLives = { $inc: {lives: -1 } };
-      await usersCollection.updateOne({room: room, username: hitUser}, newLives);
+      // let shortestDistance: number;
+      // users.map((user) => {
+      //   if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
+      //     shortestDistance = distance(user.x, user.y, xHit, yHit);
+      //     hitUser = user.username;
+      //   }
+      //   else if(user.lives > 0 && user.x > 0 && user.y > 0){
+      //     const distanceFrom = distance(user.x, user.y, xHit, yHit);
+      //     if(distanceFrom < shortestDistance){
+      //       shortestDistance = distanceFrom;
+      //       hitUser = user.username
+      //     } 
+      //   }
+      // })
+      // let newLives = { $inc: {lives: -1 } };
+      // await usersCollection.updateOne({room: room, username: hitUser}, newLives);
 
-      const newUsers = await usersCollection
-        .find({ room })
-        .sort({ lives: -1 })
-        .toArray();
+      // const newUsers = await usersCollection
+      //   .find({ room })
+      //   .sort({ lives: -1 })
+      //   .toArray();
 
-      
-      socket.emit("users-hit", newUsers);
-      socket.to(room).emit("users-hit", newUsers);
+
+      // socket.emit("users-hit", newUsers);
+      // socket.to(room).emit("users-hit", newUsers);
+
+      await handleHitUser(room);
     })
 
     socket.on("disconnecting", async () => {
