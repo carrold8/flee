@@ -9,7 +9,7 @@ const next_1 = __importDefault(require("next"));
 const socket_io_1 = require("socket.io");
 const mongodb_1 = __importDefault(require("./lib/mongodb"));
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "localhost";
+const hostname = process.env.HOSTNAME || "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 const app = (0, next_1.default)({ dev, hostname, port });
 const handle = app.getRequestHandler();

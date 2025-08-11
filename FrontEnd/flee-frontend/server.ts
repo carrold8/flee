@@ -236,7 +236,7 @@ app.prepare().then(() => {
       socket.join(room);
       const sockets = (await io.in(room).fetchSockets())
       const socketsInRoom = sockets.length;
-
+      console.log('Trying to join room: ', username)
       const usersInRoom = await usersCollection.countDocuments({room: room})
       const newUser = {
         username: username,

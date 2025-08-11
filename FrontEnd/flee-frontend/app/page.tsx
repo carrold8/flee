@@ -35,10 +35,11 @@ export default function ChatRoom() {
 
 
     const handleSubmit = (username: string, room: string) => {
-
+        console.log('trying to join')
         setUserName(username);
         setRoomID(room);
         if(room && username){
+            console.log('emitting');
             socket.emit("join-room", {room: room, username: username});            
             // setJoined(true);
         }
@@ -76,8 +77,8 @@ export default function ChatRoom() {
     useEffect(() => {
 
         socket.on('connect', () => {
-      console.log('[CLIENT] Connected:', socket.id);
-    });
+            console.log('[CLIENT] Connected:', socket.id);
+        });
 
         socket.on('chat-history', (data) => {
             
