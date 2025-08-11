@@ -1,12 +1,5 @@
 "use client"
 import React, { useState } from "react";
-import {socket} from '@/lib/SocketClient'
-import {useRouter} from 'next/navigation';
-
-interface FormSubmitProps { 
-    username: string;
-    room: string;
-}
 
 export default function HomeForm({
     onSubmitForm,
@@ -17,9 +10,7 @@ export default function HomeForm({
 
     const [name, setName] = useState('');
     const [roomID, setRoomID] = useState('');
-    const router = useRouter(); 
 
-    
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onSubmitForm(name, roomID)

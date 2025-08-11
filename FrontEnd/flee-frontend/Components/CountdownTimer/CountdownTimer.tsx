@@ -7,12 +7,11 @@ import {socket} from '@/lib/SocketClient';
 
 
 function CountdownTimer() {
-  const [timeLeft, setTimeLeft] = useState<number | null>(null);
-  const [endTime, setEndTime] = useState<number | null>(null);
+
   const [time, setTime] = useState<number | null>(null);
 
   useEffect(() => {
-    socket.on('countdownStart',  (time) => {
+    socket.on('countdownStart',  () => {
       // setTime(time);
     });
     

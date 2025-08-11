@@ -11,17 +11,14 @@ import ResultDisplay from "@/Components/ResultDisplay/ResultDisplay";
 
 export default function ChatRoom() {
 
-    const msgTone = typeof Audio !== 'undefined' ? new Audio('/sounds/message-124468.mp3') : null;
+    // const msgTone = typeof Audio !== 'undefined' ? new Audio('/sounds/message-124468.mp3') : null;
 
     const [joined, setJoined] = useState(false);
-    const [invalid, setInvalid] = useState(false);
     const [ready, setReady] = useState(false);
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
-    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: number, lives: Number, room: string, ready: boolean, connected: boolean} []>([]);
-    const [leaderboard, setLeaderboard] = useState<{sender: string; message: string; colour: string} []>([]);
-    const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [users, setUsers] = useState<{username: string, colour: string, x: number, y: number, lives: number, room: string, ready: boolean, connected: boolean} []>([]);
 
     const [roomID, setRoomID] = useState('');
     const [userName, setUserName] = useState(''); 
@@ -47,7 +44,7 @@ export default function ChatRoom() {
         }
     }
 
-    const handleSelectSquare = (X: Number, Y: Number) => {
+    const handleSelectSquare = (X: number, Y: number) => {
             const newPoint = {
                 x: X,
                 y: Y,
@@ -61,6 +58,20 @@ export default function ChatRoom() {
             setReady(!ready);
         }
     
+    
+    // useEffect(() => {
+    //     socket.on("message", (data) => {
+            
+    //         setMessages((prev) => [...prev, data]);
+
+    //         if(msgTone){
+    //             msgTone.play().catch((err) => {
+    //                 console.log('Audio play issue: ', err);
+    //             })
+    //         }
+    //     })
+
+    // }, [msgTone])
 
     useEffect(() => {
 
@@ -68,16 +79,7 @@ export default function ChatRoom() {
             
             setMessages(data);
         })
-        socket.on("message", (data) => {
-            
-            setMessages((prev) => [...prev, data]);
-
-            if(msgTone){
-                msgTone.play().catch((err) => {
-                    console.log('Audio play issue: ', err);
-                })
-            }
-        })
+        
 
         socket.on("ready-up", (data) => {
             setUsers(data);
@@ -92,6 +94,10 @@ export default function ChatRoom() {
             // setUsers((prev => [...prev, data.users]))
             setMessages((prev => [...prev, {sender: "system", message: data.message, colour: 'gray'}]))
         });
+
+        socket.on("message", (data) => {
+            setMessages((prev) => [...prev, data]);
+        })
 
         socket.on("user-tiles", (data) => {
             setUsers(data);

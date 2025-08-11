@@ -8,23 +8,23 @@ import {socket} from '@/lib/SocketClient';
 interface userInterface {
     username: string,
     colour: string,
-    x: Number,
-    y: Number,
-    lives: Number,
+    x: number,
+    y: number,
+    lives: number,
     room: string,
     ready: boolean
 }
 
 
 
-export default function GameGrid({ users, handleSelectSquare} : {users: userInterface[], handleSelectSquare: (X: Number, Y: Number) => void}){
+export default function GameGrid({ users, handleSelectSquare} : {users: userInterface[], handleSelectSquare: (X: number, Y: number) => void}){
 
     const xVals = [1,2,3,4,5,6,7,8,9,10]
     const yVals = [1,2,3,4,5,6,7,8,9,10]
 
     const [hitPoint, setHitPoint] = useState({x: 0, y: 0});
     const [clickable, setClickable] = useState(false);
-    const [countDown, setCountDown] = useState<number | null>(10);
+    // const [countDown, setCountDown] = useState<number | null>(10);
 
     const clickGridLocation = (x: number, y: number) => {
         if((users.filter((user) => user.ready).length === users.length) && clickable){
@@ -38,13 +38,13 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
 
     useEffect(() => {
     
-        socket.on('countdown', (time) => {
-          setCountDown(time)
-        })
+        // socket.on('countdown', (time) => {
+        //   setCountDown(time)
+        // })
     
-        socket.on('countdown-end', () => {
-          setCountDown(null);
-        })
+        // socket.on('countdown-end', () => {
+        //   setCountDown(null);
+        // })
 
         socket.on('grid-clickable', (bool) => {
             setClickable(bool);

@@ -6,9 +6,9 @@ import { FaCheckCircle } from "react-icons/fa";
 interface userInterface {
     username: string,
     colour: string,
-    x: Number,
-    y: Number,
-    lives: Number,
+    x: number,
+    y: number,
+    lives: number,
     room: string,
     ready: boolean,
     connected: boolean
