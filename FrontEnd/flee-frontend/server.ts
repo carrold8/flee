@@ -422,7 +422,7 @@ app.prepare().then(() => {
     });
   });
 
-  httpServer.listen(port, () => {
+  httpServer.listen(port, '0.0.0.0', () => {
     console.log(`Server Running on http://${hostname}:${port}`);
   });
 });
