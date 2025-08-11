@@ -75,6 +75,10 @@ export default function ChatRoom() {
 
     useEffect(() => {
 
+        socket.on('connect', () => {
+      console.log('[CLIENT] Connected:', socket.id);
+    });
+
         socket.on('chat-history', (data) => {
             
             setMessages(data);

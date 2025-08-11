@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
-import clientPromise from "./lib/mongodb.ts"; // ✅ MongoDB import
+import clientPromise from "./lib/mongodb.js"; // ✅ MongoDB import
 import { connected } from 'node:process';
 import { UserInfo } from 'node:os';
 import { resolve } from 'node:path';
@@ -34,6 +34,8 @@ app.prepare().then(() => {
     const db = client.db("chatdb");
     const usersCollection = db.collection("users");
     const messagesCollection = db.collection("messages");
+
+    console.log('A conneciton has been made')
 
     const startCountdown = async (room: string, time: number) => {
       let countDownSeconds = time;

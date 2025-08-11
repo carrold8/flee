@@ -1,9 +1,8 @@
-"use strict";
 import 'dotenv/config';
 import { createServer } from "node:http";
 import next from "next";
 import { Server } from "socket.io";
-import clientPromise from "./lib/mongodb.ts"; // ✅ MongoDB import
+import clientPromise from "./lib/mongodb.js"; // ✅ MongoDB import
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
@@ -24,6 +23,7 @@ app.prepare().then(() => {
         const db = client.db("chatdb");
         const usersCollection = db.collection("users");
         const messagesCollection = db.collection("messages");
+        console.log('A conneciton has been made');
         const startCountdown = async (room, time) => {
             let countDownSeconds = time;
             socket.to(room).emit('countdownStart');
@@ -81,7 +81,6 @@ app.prepare().then(() => {
             io.to(room).emit('user-tiles', usersWithTiles);
         };
         const handleHitUser = async (room) => {
-            var _a, _b;
             const xHit = Math.floor(Math.random() * 10) + 1;
             const yHit = Math.floor(Math.random() * 10) + 1;
             let hitUser = '';
@@ -110,8 +109,8 @@ app.prepare().then(() => {
             });
             const chatMessage = {
                 room,
-                sender: ((_a = users.find((user) => user.username === hitUser)) === null || _a === void 0 ? void 0 : _a.lives) === 1 ? "game" : "system",
-                message: ((_b = users.find((user) => user.username === hitUser)) === null || _b === void 0 ? void 0 : _b.lives) === 1 ? hitUser + " was eliminated." : hitUser + " lost a life.",
+                sender: users.find((user) => user.username === hitUser)?.lives === 1 ? "game" : "system",
+                message: users.find((user) => user.username === hitUser)?.lives === 1 ? hitUser + " was eliminated." : hitUser + " lost a life.",
                 colour: 'grey',
                 timestamp: new Date(),
             };
