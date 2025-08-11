@@ -1,14 +1,18 @@
 {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        "module": "esnext",
-        "target": "es2020",
-        "outDir": "./dist",
-        "moduleResolution": "node",
-        "strict": true,
-        "noEmit": false,
-        "isolatedModules": false,
-        "allowImportingTsExtensions": false
-    },
-    "include": ["server.mts", "lib/**/*.ts"]
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "target": "es2017",
+    "outDir": "dist",
+    "rootDir": ".",
+    "moduleResolution": "node",
+    "noEmit": false,
+    "isolatedModules": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "strict": true,
+    "allowImportingTsExtensions": false,
+  },
+  "include": ["server.ts", "lib/**/*"],
+  "exclude": ["node_modules", "pages", "public", ".next"]
 }

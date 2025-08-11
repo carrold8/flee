@@ -2,13 +2,12 @@
   "name": "flee-frontend",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--loader=ts-node/esm node --no-warnings server.mts",
+    "dev": "ts-node --project tsconfig.dev.json server.ts",
     "build": "next build",
     "build:socket": "next build && tsc --project tsconfig.server.json",
     "start": "next start",
-    "start:socket": "cross-env NODE_ENV=production node dist/server.mjs",
+    "start:socket": "cross-env NODE_ENV=production node dist/server.js",
     "lint": "next lint"
   },
   "dependencies": {

@@ -1,12 +1,17 @@
-import 'dotenv/config';
-import { createServer } from "node:http";
-import next from "next";
-import { Server } from "socket.io";
-import clientPromise from "./lib/mongodb.js"; // ✅ MongoDB import
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+require("dotenv/config");
+const node_http_1 = require("node:http");
+const next_1 = __importDefault(require("next"));
+const socket_io_1 = require("socket.io");
+const mongodb_1 = __importDefault(require("./lib/mongodb"));
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME || "localhost";
 const port = parseInt(process.env.PORT || "3000", 10);
-const app = next({ dev, hostname, port });
+const app = (0, next_1.default)({ dev, hostname, port });
 const handle = app.getRequestHandler();
 const colours = [
     '#e6194B', '#ffe119', '#bf3f45', '#4363d8', '#469990',
@@ -14,16 +19,15 @@ const colours = [
     '#808000', '#f58231'
 ];
 app.prepare().then(() => {
-    const httpServer = createServer(handle);
-    const io = new Server(httpServer, { cors: { origin: '*' } });
+    const httpServer = (0, node_http_1.createServer)(handle);
+    const io = new socket_io_1.Server(httpServer, { cors: { origin: '*' } });
     const COUNTDOWN_DURATION = 10;
     let countdownEndTime = null;
     io.on("connection", async (socket) => {
-        const client = await clientPromise;
+        const client = await mongodb_1.default;
         const db = client.db("chatdb");
         const usersCollection = db.collection("users");
         const messagesCollection = db.collection("messages");
-        console.log('A conneciton has been made');
         const startCountdown = async (room, time) => {
             let countDownSeconds = time;
             socket.to(room).emit('countdownStart');
@@ -81,6 +85,7 @@ app.prepare().then(() => {
             io.to(room).emit('user-tiles', usersWithTiles);
         };
         const handleHitUser = async (room) => {
+            var _a, _b;
             const xHit = Math.floor(Math.random() * 10) + 1;
             const yHit = Math.floor(Math.random() * 10) + 1;
             let hitUser = '';
@@ -109,8 +114,8 @@ app.prepare().then(() => {
             });
             const chatMessage = {
                 room,
-                sender: users.find((user) => user.username === hitUser)?.lives === 1 ? "game" : "system",
-                message: users.find((user) => user.username === hitUser)?.lives === 1 ? hitUser + " was eliminated." : hitUser + " lost a life.",
+                sender: ((_a = users.find((user) => user.username === hitUser)) === null || _a === void 0 ? void 0 : _a.lives) === 1 ? "game" : "system",
+                message: ((_b = users.find((user) => user.username === hitUser)) === null || _b === void 0 ? void 0 : _b.lives) === 1 ? hitUser + " was eliminated." : hitUser + " lost a life.",
                 colour: 'grey',
                 timestamp: new Date(),
             };
