@@ -63,7 +63,7 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
 
                 {(users.filter((user) => user.ready).length === users.length) ? 
                 <div>
-                    {clickable ? 'Choose your square! ' : 'Round starts in: '}<CountdownTimer />
+                    <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>{clickable ? 'Choose your square! ' : 'Round starts in: '} <CountdownTimer /></div>
                 <table>
                     <tbody>
             {xVals.map((xVal) => {

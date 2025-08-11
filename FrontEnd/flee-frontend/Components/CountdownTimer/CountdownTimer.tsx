@@ -27,7 +27,7 @@ function CountdownTimer() {
   }, []);
 
   return (
-    <div>
+    <div className='p-3'>
       <h1>{time !== null && time }</h1>
     </div>
   );

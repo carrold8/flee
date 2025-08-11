@@ -47,7 +47,6 @@ app.prepare().then(() => {
         let interval = setInterval(() => {
           countDownSeconds--;
           io.to(room).emit('countdown', countDownSeconds);
-          console.log(countDownSeconds);
 
           if(countDownSeconds <= 0){
             clearInterval(interval);
@@ -76,11 +75,6 @@ app.prepare().then(() => {
       const tilesNeeded = usersWithoutTiles.length;
       const usersSelected = users.filter((user) => (user.x > 0 && user.y > 0)); 
 
-      console.log('usersSelected')
-      console.log(usersSelected)
-      console.log(tilesNeeded);
-      console.log(usersWithoutTiles);
-
       const isSelected = (tile: {x: number, y: number}) =>
         usersSelected.some(selected => selected.x === tile.x && selected.y === tile.y);
 
@@ -93,8 +87,7 @@ app.prepare().then(() => {
 
       const newTiles = availableTiles.slice(0, tilesNeeded);
 
-      console.log('newTiles: ', newTiles.length)
-      console.log(newTiles)
+      
 
       const userUpdates: {_id: ObjectId, x: number, y: number}[] = [];
       usersWithoutTiles.map((user, index) => {
@@ -108,17 +101,13 @@ app.prepare().then(() => {
         },
       }));
 
-      console.log('bulkOps');
-      console.log(bulkOps);
-
+      
       await usersCollection.bulkWrite(bulkOps);
      
       const usersWithTiles = await usersCollection
         .find({ room })
         .sort({ lives: -1 })
         .toArray();
-
-        console.log(usersWithTiles);
 
         io.to(room).emit('user-tiles', usersWithTiles);
       
@@ -184,8 +173,6 @@ app.prepare().then(() => {
 
     const clearBoard = async (room: string) => {
 
-      console.log('clearing board')
-
       await usersCollection.updateMany({room: room}, {$set: {x: 0, y: 0}});
       const users = await usersCollection
         .find({ room })
@@ -219,6 +206,7 @@ app.prepare().then(() => {
 
     }
 
+
     const startGame = async (room: string) => {
 
       let allEliminated = false;
@@ -230,18 +218,15 @@ app.prepare().then(() => {
         await startCountdown(room, 5);
 
         //Enable the frontend grid to be clickable.
-        console.log('Countdown ended')
         io.to(room).emit('grid-clickable', true);
 
         //Show countdown timer for choosing tiles and then disable the grid.
-        await startCountdown(room, 10);
+        await startCountdown(room, 5);
         io.to(room).emit('grid-clickable', false);
         const users = await handleEndOfRound(room);
         const usersLeft = users.filter((user) => user.lives > 0).length;
         allEliminated = usersLeft === 1;
       }
-      
-      
     }
 
     // if(countdownEndTime) {
@@ -261,7 +246,7 @@ app.prepare().then(() => {
         colour: colours[usersInRoom],
         x: 0,
         y: 0,
-        lives: 3,
+        lives: 1,
         room: room,
         ready: false,
         active: true,
@@ -369,7 +354,7 @@ app.prepare().then(() => {
             colour: colours[i],
             x: 0,
             y: 0,
-            lives: 3,
+            lives: 1,
             room: room,
             ready: true,
             active: false,
@@ -385,8 +370,6 @@ app.prepare().then(() => {
           .toArray();
         socket.to(room).emit("ready-up", fillUsers);
         socket.emit("ready-up", fillUsers);
-
-        
         startGame(room);
 
       }
@@ -410,57 +393,9 @@ app.prepare().then(() => {
           .toArray();
         socket.to(room).emit("user-square-selected", users);
         socket.emit("user-square-selected", users);
-
-        if(users.filter((user) => user.x !== 0 && user.y !== 0).length === users.filter((user) => user.active && user.connected).length){
-          console.log('All players have selected points');
-        }
       } 
     })
 
-    socket.on("mimic-zero", async ({room}) => {
-      // const xHit = Math.floor(Math.random() * 10) + 1;
-      // const yHit = Math.floor(Math.random() * 10) + 1;
-      // let hitUser = '';
-
-      // const users = await usersCollection
-      //   .find({ room })
-      //   .sort({ lives: -1 })
-      //   .toArray();
-
-      // const distance = (userX: number, userY: number, x: number, y: number) => {
-      //   const xvals = (userX - x) * (userX - x);
-      //   const yvals = (userY - y) * (userY - y);
-      //   return Math.sqrt(xvals + yvals);
-      // }
-
-      // let shortestDistance: number;
-      // users.map((user) => {
-      //   if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
-      //     shortestDistance = distance(user.x, user.y, xHit, yHit);
-      //     hitUser = user.username;
-      //   }
-      //   else if(user.lives > 0 && user.x > 0 && user.y > 0){
-      //     const distanceFrom = distance(user.x, user.y, xHit, yHit);
-      //     if(distanceFrom < shortestDistance){
-      //       shortestDistance = distanceFrom;
-      //       hitUser = user.username
-      //     } 
-      //   }
-      // })
-      // let newLives = { $inc: {lives: -1 } };
-      // await usersCollection.updateOne({room: room, username: hitUser}, newLives);
-
-      // const newUsers = await usersCollection
-      //   .find({ room })
-      //   .sort({ lives: -1 })
-      //   .toArray();
-
-
-      // socket.emit("users-hit", newUsers);
-      // socket.to(room).emit("users-hit", newUsers);
-
-      await handleHitUser(room);
-    })
 
     socket.on("disconnecting", async () => {
       for (const room of socket.rooms) {

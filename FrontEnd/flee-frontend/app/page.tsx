@@ -7,6 +7,7 @@ import HomeForm from "@/Components/HomeForm/HomeForm";
 import GameGrid from "@/Components/GameGrid/GameGrid";
 import './HomePage.css';
 import UserDisplay from "@/Components/UserDisplay/UserDisplay";
+import ResultDisplay from "@/Components/ResultDisplay/ResultDisplay";
 
 export default function ChatRoom() {
 
@@ -18,7 +19,9 @@ export default function ChatRoom() {
     const [members, setMembers] = useState(0);
     const [colour, setColour] = useState('');
     const [messages, setMessages] = useState<{sender: string; message: string; colour: string} []>([]);
-    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: Number, lives: Number, room: string, ready: boolean, connected: boolean} []>([]);
+    const [users, setUsers] = useState<{username: string, colour: string, x: Number, y: number, lives: Number, room: string, ready: boolean, connected: boolean} []>([]);
+    const [leaderboard, setLeaderboard] = useState<{sender: string; message: string; colour: string} []>([]);
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
 
     const [roomID, setRoomID] = useState('');
     const [userName, setUserName] = useState(''); 
@@ -42,10 +45,6 @@ export default function ChatRoom() {
             socket.emit("join-room", {room: room, username: username});            
             // setJoined(true);
         }
-    }
-
-    const handleMimic = () => {
-        socket.emit("mimic-zero", {room: roomID})
     }
 
     const handleSelectSquare = (X: Number, Y: Number) => {
@@ -117,7 +116,6 @@ export default function ChatRoom() {
             console.log('reset ', data)
             setUsers(data);
         })
-        
 
         return () => {
             socket.off("user_joined");
@@ -134,11 +132,10 @@ export default function ChatRoom() {
                 <div>
                     <div>Welcome to Room {roomID}</div>
                     <div>Members: {members}</div>
-                    <button onClick={handleMimic}>Mimic</button>
                     
                     <div className="game-container">
                         <div className="item">
-                            <button onClick={handleReadyUp} disabled={users.length === users.filter((user) => user.ready).length} className={ready ? 'ready-button ready' : 'ready-button'}>Ready Up</button>
+                            {users.length !== users.filter((user) => user.ready).length && <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>{ready? 'Unready':'Ready Up'}</button>}
                             <div>
                                 <table style={{width: '100%'}}>
                                                 <thead>
@@ -162,7 +159,11 @@ export default function ChatRoom() {
                         </div>
                         <div className="item">
                             <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                            <GameGrid users={users} handleSelectSquare={handleSelectSquare}/>
+                            {(users.filter((user) => user.lives === 1 && user.ready).length === 1) && users.filter((user) => user.lives === 0).length === users.length - 1 ? 
+                                <ResultDisplay leaderboard={messages.filter((msg) => msg.sender === 'game')} winner={users.find((user) => user.lives === 1 && user.ready)?.username ?? ''} />
+                                :
+                                <GameGrid users={users} handleSelectSquare={handleSelectSquare}/>
+                            }
                             </div>
                         </div>
                         <div className="item">
