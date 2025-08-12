@@ -170,8 +170,8 @@ export default function ChatRoom() {
                         </div>
                         <div className="item">
                             <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                            {(users.filter((user) => user.lives === 1 && user.ready).length === 1) && users.filter((user) => user.lives === 0).length === users.length - 1 ? 
-                                <ResultDisplay leaderboard={messages.filter((msg) => msg.sender === 'game')} winner={users.find((user) => user.lives === 1 && user.ready)?.username ?? ''} />
+                            {(users.filter((user) => user.lives > 0 && user.ready).length === 1) && users.filter((user) => user.lives === 0).length === users.length - 1 ? 
+                                <ResultDisplay leaderboard={messages.filter((msg) => msg.sender === 'game').reverse()} winner={users.find((user) => user.lives > 0 && user.ready)?.username ?? ''} />
                                 :
                                 <GameGrid users={users} handleSelectSquare={handleSelectSquare}/>
                             }
