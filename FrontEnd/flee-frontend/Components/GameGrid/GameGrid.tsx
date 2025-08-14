@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react"
 import CountdownTimer from "../CountdownTimer/CountdownTimer";
 import {socket} from '@/lib/SocketClient';
+import './GameGrid.css';
 
 interface userInterface {
     username: string,
@@ -57,14 +58,14 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
       }, []);
 
     return(
-        <div>
+        <div className="game-grid-container">
             <div>
                 
 
                 {(users.filter((user) => user.ready).length === users.length) ? 
                 <div>
                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>{clickable ? 'Choose your square! ' : 'Round starts in: '} <CountdownTimer /></div>
-                <table>
+                {/* <table>
                     <tbody>
             {xVals.map((xVal) => {
                 return(
@@ -100,7 +101,47 @@ export default function GameGrid({ users, handleSelectSquare} : {users: userInte
                 )
             })}
             </tbody>
-            </table>
+            </table> */}
+
+            <div >
+            {xVals.map((xVal) => {
+                return(
+                    <div key={xVal} style={{display: 'flex'}}>
+                    {yVals.map((yVal) => {
+                        if(users.find((user) => user.x === xVal && user.y === yVal)){
+                         
+                            const bgColour = users.find((user) => user.x === xVal && user.y === yVal)?.colour;
+                            const hitSquare = (xVal == hitPoint.x) && (yVal === hitPoint.y)
+                            return (       
+                                <span 
+                                    key={yVal} 
+                                    className={hitSquare ? "game-grid-tile hit" : "game-grid-tile"}
+                                    style={{ backgroundColor: bgColour}} 
+                                    // onClick={() => {if(!users.find((user) => user.x === xVal && user.y === yVal)) handleSelectSquare(xVal, yVal)}}
+                                    onClick={() => {clickGridLocation(xVal, yVal)}}
+                                ></span>
+                            )
+                            }
+                            else {
+                                const hitSquare = (xVal == hitPoint.x) && (yVal === hitPoint.y)
+                                return(
+                                <span 
+                                    key={yVal} 
+                                    className={hitSquare ? "game-grid-tile hit" : "game-grid-tile"}
+                                    style={{ backgroundColor: 'white'}} 
+                                    onClick={() => {clickGridLocation(xVal, yVal)}}
+                                ></span>
+                                )
+                            }
+                            
+                        
+                    })}
+                    </div>
+                )
+            })}
+            </div>
+
+
             </div>
             :
               <h1>Waiting for everyone to ready up...</h1>  

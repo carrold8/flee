@@ -143,7 +143,7 @@ export default function ChatRoom() {
                 <div>
                     <div>Welcome to Room {roomID}</div>
                     <div>Members: {members}</div>
-                    
+  
                     <div className="game-container">
                         <div className="item">
                             {users.length !== users.filter((user) => user.ready).length && <button onClick={handleReadyUp} className={ready ? 'ready-button ready' : 'ready-button'}>{ready? 'Unready':'Ready Up'}</button>}
@@ -168,7 +168,7 @@ export default function ChatRoom() {
                                 </table>
                             </div>
                         </div>
-                        <div className="item">
+                        <div className="item game">
                             <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                             {(users.filter((user) => user.lives > 0 && user.ready).length === 1) && users.filter((user) => user.lives === 0).length === users.length - 1 ? 
                                 <ResultDisplay leaderboard={messages.filter((msg) => msg.sender === 'game').reverse()} winner={users.find((user) => user.lives > 0 && user.ready)?.username ?? ''} />
@@ -193,6 +193,9 @@ export default function ChatRoom() {
 
                         </div>
                     </div>
+
+                  
+                        
                     
                     
                    

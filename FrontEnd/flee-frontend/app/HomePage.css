@@ -1,6 +1,6 @@
 .game-container{
     display: grid;
-    grid-template-columns: 1fr 3fr 1fr;
+    grid-template-columns: 1fr 1fr;
 }
 
 .game-container .item{
@@ -10,6 +10,11 @@
     margin: 1rem;
 }
 
+.game-container .item.game{
+    background-color: #777777;
+    border-radius: 0.5rem;
+}
+
 .ready-button{
     padding: 0.75rem;
     border-radius: 0.5rem;
@@ -17,4 +22,12 @@
 }
 .ready-button.ready{
     background-color: green;
+}
+
+
+@media only screen and (max-width: 480px) {
+  .game-container{
+        /* display: grid; */
+        grid-template-columns: 1fr;
+    }
 }
