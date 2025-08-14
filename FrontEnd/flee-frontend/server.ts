@@ -126,15 +126,11 @@ app.prepare().then(() => {
         return Math.sqrt(xvals + yvals);
       }
 
-      let shortestDistance: number;
+      let shortestDistance = 500;
       users.map((user) => {
-        if(!shortestDistance && user.lives > 0 && user.x > 0 && user.y > 0 ){
-          shortestDistance = distance(user.x, user.y, xHit, yHit);
-          hitUser = user.username;
-        }
-        else if(user.lives > 0 && user.x > 0 && user.y > 0){
-          const distanceFrom = distance(user.x, user.y, xHit, yHit);
-          if(distanceFrom < shortestDistance){
+        const distanceFrom = distance(user.x, user.y, xHit, yHit);
+        if(user.lives > 0 && user.x > 0 && user.y > 0){
+          if(distanceFrom < (shortestDistance)){
             shortestDistance = distanceFrom;
             hitUser = user.username
           } 
