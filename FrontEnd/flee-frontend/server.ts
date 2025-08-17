@@ -145,6 +145,8 @@ app.prepare().then(() => {
         timestamp: new Date(),
       };
 
+      console.log('Hit: ', hitUser);
+
       await messagesCollection.insertOne(chatMessage);
 
       //Emit message
@@ -209,6 +211,7 @@ app.prepare().then(() => {
 
         //Start a countdown before beginning game
         await startCountdown(room, 5);
+        console.log('New Round');
 
         //Enable the frontend grid to be clickable.
         io.to(room).emit('grid-clickable', true);
